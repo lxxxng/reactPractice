@@ -1,0 +1,3 @@
+# these files wont be pushed to github
+.env
+node_modules/

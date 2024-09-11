@@ -1,0 +1,65 @@
+const express = require('express');
+const router = express.Router();
+const { Users } = require('../models');
+const bcrypt = require('bcrypt');
+const {sign} = require('jsonwebtoken');
+
+router.post("/", async (req, res) => {
+    const { username, password } = req.body;
+  
+    // Check if the username already exists
+    const existingUser = await Users.findOne({ where: { username: username } });
+  
+    if (existingUser) {
+      return res.status(400).json({ error: "Username already taken" });
+    }
+  
+    // Hash the password with salt round = 10 
+    const hash = await bcrypt.hash(password, 10);
+    
+    // Create the user with the hashed password
+    await Users.create({
+      username: username,
+      password: hash,
+    });
+  
+    res.json("Success");
+});
+  
+  
+router.post("/login", async (req, res) => {
+    const { username, password } = req.body;
+
+    try {
+        // Find user in the database
+        const user = await Users.findOne({ where: { username: username } });
+
+        // If user doesn't exist, send error response
+        if (!user) {
+        return res.json({ error: "User does not exist" });
+        }
+
+        // Compare the provided password with the stored hashed password
+        bcrypt.compare(password, user.password).then((match) => {
+        if (!match) {
+            return res.json({ error: "Wrong password" });
+        }
+
+        const accessToken = sign(
+            {username: user.username, id: user.id}, 
+            "importantsecret"
+        );
+
+        res.json(accessToken);
+
+        });
+
+    } catch (error) {
+        // If any error occurs, log it and prevent server crash
+        console.error("Login error:", error);
+        res.status(500).json({ error: "An internal server error occurred" });
+    }
+});
+  
+
+module.exports = router
