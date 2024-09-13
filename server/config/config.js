@@ -1,25 +1,32 @@
-require('dotenv').config(); // Correct syntax for loading .env variables
+require('dotenv').config(); // Loads variables from .env in development
+const url = require('url');
 
-module.exports = {
-  development: {
+let config;
+
+if (process.env.NODE_ENV === 'production' && process.env.JAWSDB_URL) {
+  // Parse JAWSDB_URL for production (Heroku)
+  const dbUrl = url.parse(process.env.JAWSDB_URL);
+  const [username, password] = dbUrl.auth.split(':');
+
+  config = {
+    username: username,
+    password: password,
+    database: dbUrl.pathname.substring(1), // Removes leading '/'
+    host: dbUrl.hostname,
+    dialect: 'mysql',
+  };
+} else {
+  // Local development configuration
+  config = {
     username: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '',
     database: process.env.DB_NAME || 'react_tutorial',
     host: process.env.DB_HOST || 'localhost',
     dialect: process.env.DB_DIALECT || 'mysql',
-  },
-  test: {
-    username: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || null,
-    database: process.env.DB_NAME_TEST || 'database_test',
-    host: process.env.DB_HOST || '127.0.0.1',
-    dialect: process.env.DB_DIALECT || 'mysql',
-  },
-  production: {
-    username: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || null,
-    database: process.env.DB_NAME_PROD || 'database_production',
-    host: process.env.DB_HOST || '127.0.0.1',
-    dialect: process.env.DB_DIALECT || 'mysql',
-  }
+  };
+}
+
+module.exports = {
+  development: config, // For local development
+  production: config,  // For production
 };
